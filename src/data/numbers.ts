@@ -1,4 +1,5 @@
 import type { LearningItem } from "../types/content";
+import { audioPath } from "../audio/audioManifest";
 
 const WORDS = [
   "One",
@@ -23,7 +24,7 @@ export const NUMBERS: LearningItem[] = WORDS.map((word, index) => {
     label: word,
     emoji: "🔵",
     audio: {
-      word: `audio/en/numbers/${value}.mp3`,
+      word: audioPath("numbers", String(value)),
     },
     meta: { count: value },
   };

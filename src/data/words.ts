@@ -1,4 +1,5 @@
 import type { LearningItem } from "../types/content";
+import { audioPath } from "../audio/audioManifest";
 
 type WordCategory = "Food" | "Home" | "Nature" | "Things" | "People";
 
@@ -53,7 +54,7 @@ export const WORDS: LearningItem[] = SEEDS.map(({ name, emoji, category }) => ({
   label: name,
   emoji,
   audio: {
-    word: `audio/en/words/${name.toLowerCase()}.mp3`,
+    word: audioPath("words", name.toLowerCase()),
   },
   meta: { category },
 }));

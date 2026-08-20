@@ -27,10 +27,15 @@ export interface WorldMeta {
   itemCount: number;
 }
 
-/** Paths are logical references into the audio architecture, not yet loaded. */
+/** Paths are logical references into the audio architecture (see `src/audio/audioManifest.ts`). */
 export interface AudioRefs {
+  /** Name/pronunciation recording — used by the primary Listen action in every world. */
   word?: string;
+  /** Letter phonics ("sound it out") recording — ABC Adventure only. */
   phonics?: string;
+  /** Animal sound-effect recording (e.g. a bark) — Animals only. */
+  sound?: string;
+  /** Short spoken UI prompt, e.g. "Tap to hear!" — reserved, not yet wired to any screen. */
   instruction?: string;
 }
 

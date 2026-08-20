@@ -4,15 +4,42 @@ import { PageShell } from "../components/layout/PageShell";
 import { WorldHeader, LearningTile, ResponsiveGrid, FeedbackBubble, Button } from "../components/ui";
 import { getWorld, getWorldItems } from "../data/worlds";
 import type { LearningItem, WorldId } from "../types/content";
-import { playPlaceholderAudio } from "../audio/audioManifest";
+import { playAudio } from "../audio/audioManifest";
+
+type AudioKind = "word" | "phonics" | "sound";
+
+/**
+ * Groups items into ordered categories when every item in the world shares
+ * a `meta.category` (currently true only for First Words: Food, Home,
+ * Nature, Things, People). Returns null for worlds with no category data,
+ * so the caller falls back to a single flat grid.
+ */
+function groupByCategory(items: LearningItem[]): Array<[string, LearningItem[]]> | null {
+  if (items.length === 0 || !items.every((item) => typeof item.meta?.category === "string")) {
+    return null;
+  }
+  const order: string[] = [];
+  const groups = new Map<string, LearningItem[]>();
+  for (const item of items) {
+    const category = item.meta!.category as string;
+    if (!groups.has(category)) {
+      groups.set(category, []);
+      order.push(category);
+    }
+    groups.get(category)!.push(item);
+  }
+  return order.map((category) => [category, groups.get(category)!]);
+}
 
 export function WorldScreen() {
   const { worldId } = useParams<{ worldId: string }>();
   const world = getWorld(worldId as WorldId);
   const items = useMemo(() => (world ? getWorldItems(world.id) : []), [world]);
+  const groupedItems = useMemo(() => groupByCategory(items), [items]);
 
   const [selected, setSelected] = useState<LearningItem | undefined>(items[0]);
   const [toast, setToast] = useState<string | null>(null);
+  const [playingKind, setPlayingKind] = useState<AudioKind | null>(null);
 
   if (!world) {
     return <Navigate to="/home" replace />;
@@ -23,16 +50,37 @@ export function WorldScreen() {
   function handleSelect(item: LearningItem) {
     setSelected(item);
     setToast(null);
+    setPlayingKind(null);
   }
 
-  function handleListen() {
+  async function handlePlay(kind: AudioKind) {
     if (!active) return;
-    playPlaceholderAudio(active.audio.word ?? "");
+    const path = active.audio[kind];
+    if (!path) return;
     setToast(null);
+    setPlayingKind(kind);
+    await playAudio(path);
+    setPlayingKind(null);
   }
 
   function handleComingSoon(feature: string) {
     setToast(`${feature} is coming in a future update!`);
+  }
+
+  function renderTileGrid(worldItems: LearningItem[]) {
+    return (
+      <ResponsiveGrid className="sm:grid-cols-4 lg:grid-cols-6">
+        {worldItems.map((item) => (
+          <LearningTile
+            key={item.id}
+            item={item}
+            accentColor={world!.color}
+            selected={item.id === active?.id}
+            onSelect={handleSelect}
+          />
+        ))}
+      </ResponsiveGrid>
+    );
   }
 
   return (
@@ -79,16 +127,44 @@ export function WorldScreen() {
                   {active.secondary}
                 </p>
               )}
+              {typeof active.meta?.example === "string" && (
+                <p className="mt-1 text-base font-semibold text-navy-soft">
+                  {active.emoji} Like a {active.meta.example}!
+                </p>
+              )}
             </div>
 
             <div className="flex flex-wrap items-center justify-center gap-3">
               <Button
                 variant="accent"
-                onClick={handleListen}
+                onClick={() => handlePlay("word")}
+                disabled={playingKind === "word"}
                 style={{ backgroundColor: world.color }}
+                className={playingKind === "word" ? "animate-pulse" : undefined}
               >
                 <span aria-hidden="true">🔊</span> Listen
               </Button>
+              {active.audio.phonics && (
+                <Button
+                  variant="soft"
+                  onClick={() => handlePlay("phonics")}
+                  disabled={playingKind === "phonics"}
+                  className={playingKind === "phonics" ? "animate-pulse" : undefined}
+                >
+                  <span aria-hidden="true">🔤</span> Phonics Sound
+                </Button>
+              )}
+              {active.audio.sound && (
+                <Button
+                  variant="soft"
+                  onClick={() => handlePlay("sound")}
+                  disabled={playingKind === "sound"}
+                  className={playingKind === "sound" ? "animate-pulse" : undefined}
+                >
+                  <span aria-hidden="true">🐾</span>{" "}
+                  {typeof active.meta?.sound === "string" ? active.meta.sound : "Animal Sound"}
+                </Button>
+              )}
               <Button variant="soft" onClick={() => handleComingSoon("Tracing")}>
                 <span aria-hidden="true">✏️</span> Trace
               </Button>
@@ -102,17 +178,20 @@ export function WorldScreen() {
         )}
 
         <section className="mt-8" aria-label={`${world.title} items`}>
-          <ResponsiveGrid className="sm:grid-cols-4 lg:grid-cols-6">
-            {items.map((item) => (
-              <LearningTile
-                key={item.id}
-                item={item}
-                accentColor={world.color}
-                selected={item.id === active?.id}
-                onSelect={handleSelect}
-              />
-            ))}
-          </ResponsiveGrid>
+          {groupedItems ? (
+            <div className="flex flex-col gap-8">
+              {groupedItems.map(([category, categoryItems]) => (
+                <div key={category}>
+                  <h2 className="font-display mb-3 text-sm font-bold uppercase tracking-wide text-navy-soft sm:text-base">
+                    {category}
+                  </h2>
+                  {renderTileGrid(categoryItems)}
+                </div>
+              ))}
+            </div>
+          ) : (
+            renderTileGrid(items)
+          )}
         </section>
       </PageShell>
     </div>

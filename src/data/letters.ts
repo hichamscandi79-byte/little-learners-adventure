@@ -1,4 +1,5 @@
 import type { LearningItem } from "../types/content";
+import { audioPath } from "../audio/audioManifest";
 
 interface LetterSeed {
   letter: string;
@@ -35,16 +36,19 @@ const SEEDS: LetterSeed[] = [
   { letter: "Z", word: "Zebra", emoji: "🦓" },
 ];
 
-export const LETTERS: LearningItem[] = SEEDS.map(({ letter, word, emoji }) => ({
-  id: `letter-${letter.toLowerCase()}`,
-  worldId: "abc",
-  primary: `${letter}${letter.toLowerCase()}`,
-  secondary: word,
-  label: letter,
-  emoji,
-  audio: {
-    word: `audio/en/letters/${letter.toLowerCase()}.mp3`,
-    phonics: `audio/en/phonics/${letter.toLowerCase()}.mp3`,
-  },
-  meta: { exampleWord: word },
-}));
+export const LETTERS: LearningItem[] = SEEDS.map(({ letter, word, emoji }) => {
+  const id = letter.toLowerCase();
+  return {
+    id: `letter-${id}`,
+    worldId: "abc",
+    primary: `${letter}${letter.toLowerCase()}`,
+    secondary: word,
+    label: letter,
+    emoji,
+    audio: {
+      word: audioPath("letters", id),
+      phonics: audioPath("phonics", id),
+    },
+    meta: { exampleWord: word },
+  };
+});

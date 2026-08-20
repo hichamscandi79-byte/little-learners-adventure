@@ -1,4 +1,5 @@
 import type { LearningItem } from "../types/content";
+import { audioPath } from "../audio/audioManifest";
 
 interface AnimalSeed {
   name: string;
@@ -24,15 +25,19 @@ const SEEDS: AnimalSeed[] = [
   { name: "Bear", emoji: "🐻", sound: "Grr!" },
 ];
 
-export const ANIMALS: LearningItem[] = SEEDS.map(({ name, emoji, sound }) => ({
-  id: `animal-${name.toLowerCase()}`,
-  worldId: "animals",
-  primary: name,
-  secondary: sound,
-  label: name,
-  emoji,
-  audio: {
-    word: `audio/en/animals/${name.toLowerCase()}.mp3`,
-  },
-  meta: { sound },
-}));
+export const ANIMALS: LearningItem[] = SEEDS.map(({ name, emoji, sound }) => {
+  const id = name.toLowerCase();
+  return {
+    id: `animal-${id}`,
+    worldId: "animals",
+    primary: name,
+    secondary: sound,
+    label: name,
+    emoji,
+    audio: {
+      word: audioPath("animals", id),
+      sound: audioPath("animals", `${id}-sound`),
+    },
+    meta: { sound },
+  };
+});

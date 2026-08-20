@@ -1,4 +1,5 @@
 import type { LearningItem } from "../types/content";
+import { audioPath } from "../audio/audioManifest";
 
 interface ShapeSeed {
   name: string;
@@ -23,6 +24,6 @@ export const SHAPES: LearningItem[] = SEEDS.map(({ name, emoji }) => ({
   label: name,
   emoji,
   audio: {
-    word: `audio/en/shapes/${name.toLowerCase()}.mp3`,
+    word: audioPath("shapes", name.toLowerCase()),
   },
 }));

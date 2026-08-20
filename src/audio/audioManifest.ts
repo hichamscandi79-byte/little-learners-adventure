@@ -14,14 +14,17 @@
  *   audio/en/instructions/  — short UI prompts ("Tap to hear!") — reserved, unused in Phase 2
  *   audio/sfx/              — reward/feedback sound effects — reserved for Phase 4
  *
- * No production recordings ship yet (see public/audio/README.md for the
- * exact file list still required). `playAudio()` below is a real playback
- * engine — it always attempts the real file first — but when a file is
- * missing it falls back to a synthesized development tone so the Listen
- * interaction is genuinely testable end to end. That fallback is loud about
- * what it is (console warning, `"temp_tone"` return status) and disappears
- * automatically the moment a real recording is dropped into place — no code
- * change required.
+ * 125 of 140 production recordings are in place (letter names, phonics
+ * sounds, numbers, colors, shapes, animal names, first words — all real
+ * speech). The 15 animal *sound effects* (bark, moo, quack, etc.) are not
+ * TTS-producible and still require a licensed sound-effects source — see
+ * public/audio/README.md. `playAudio()` below is a real playback engine —
+ * it always attempts the real file first — but when a file is missing it
+ * falls back to a synthesized development tone so the Listen interaction
+ * is genuinely testable end to end regardless of asset completeness. That
+ * fallback is loud about what it is (console warning, `"temp_tone"` return
+ * status) and disappears automatically the moment a real recording is
+ * dropped into place — no code change required.
  *
  * Mobile audibility note: the fallback tone is generated once (off the main
  * thread's gesture requirements, via OfflineAudioContext) into a real WAV

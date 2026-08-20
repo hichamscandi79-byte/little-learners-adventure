@@ -1,0 +1,92 @@
+@import "tailwindcss";
+
+/* Self-hosted fonts (variable-weight woff2) — no external network dependency,
+   which also keeps this PWA-ready for future offline support. */
+@font-face {
+  font-family: "Baloo 2";
+  font-style: normal;
+  font-weight: 700 800;
+  font-display: swap;
+  src: url("/fonts/baloo2-latin-variable.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Nunito";
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url("/fonts/nunito-latin-variable.woff2") format("woff2");
+}
+
+@theme {
+  /* Brand palette */
+  --color-sky: #55c7f3;
+  --color-sky-soft: #e3f6fd;
+  --color-purple: #8b6fe8;
+  --color-purple-soft: #ece7fb;
+  --color-coral: #ff7b72;
+  --color-coral-soft: #ffe9e7;
+  --color-yellow: #ffd65a;
+  --color-yellow-soft: #fff7de;
+  --color-mint: #67d6b0;
+  --color-mint-soft: #e4f8f1;
+  --color-pink: #f58ac6;
+  --color-pink-soft: #fdebf5;
+  --color-cream: #fff9f1;
+  --color-navy: #26324b;
+  --color-navy-soft: #5b6785;
+
+  --font-display: "Baloo 2", "Nunito", system-ui, sans-serif;
+  --font-body: "Nunito", system-ui, sans-serif;
+
+  --shadow-soft: 0 10px 30px -8px rgb(38 50 75 / 0.18);
+  --shadow-card: 0 6px 18px -6px rgb(38 50 75 / 0.15);
+  --shadow-pressed: 0 2px 8px -2px rgb(38 50 75 / 0.2);
+}
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    font-family: var(--font-body);
+    background-color: var(--color-cream);
+    color: var(--color-navy);
+    overflow-x: hidden;
+  }
+
+  #root {
+    min-height: 100dvh;
+    overflow-x: hidden;
+  }
+
+  button {
+    touch-action: manipulation;
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: var(--font-display);
+  }
+
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

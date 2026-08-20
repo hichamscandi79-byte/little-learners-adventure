@@ -19,9 +19,22 @@
  * engine — it always attempts the real file first — but when a file is
  * missing it falls back to a synthesized development tone so the Listen
  * interaction is genuinely testable end to end. That fallback is loud about
- * what it is (console warning, `TEMP_TONE` return status) and disappears
+ * what it is (console warning, `"temp_tone"` return status) and disappears
  * automatically the moment a real recording is dropped into place — no code
  * change required.
+ *
+ * Mobile audibility note: the fallback tone is generated once (off the main
+ * thread's gesture requirements, via OfflineAudioContext) into a real WAV
+ * `<audio>` element rather than a live AudioContext oscillator. It is armed
+ * (muted, `.play()`'d) synchronously inside the same tap that triggered
+ * playback, then unmuted only if/when the real file turns out to be
+ * missing. This matters specifically on iOS Safari: (1) audio can only be
+ * unlocked synchronously within the original user-gesture call stack, not
+ * from a later async callback (which is where the previous implementation
+ * resumed its AudioContext, so it silently never unlocked), and (2) a bare
+ * AudioContext oscillator defaults to the "ambient" audio category, which
+ * iOS silences via the hardware mute switch, whereas a directly-played
+ * `<audio>` element does not.
  */
 
 export const AUDIO_LOCALE = "en";
@@ -47,40 +60,112 @@ export function audioPath(category: AudioCategory, fileId: string): string {
 
 export type PlayAudioResult = "played" | "temp_tone";
 
-let sharedAudioContext: AudioContext | null = null;
+// --- Temporary placeholder tone: synthesized once into a real WAV file ---
+// (see the module doc comment above for why this must be a real <audio>
+// element rather than a live AudioContext oscillator).
 
-function getAudioContext(): AudioContext | null {
-  const Ctor =
-    window.AudioContext ||
-    (window as unknown as { webkitAudioContext?: typeof AudioContext })
-      .webkitAudioContext;
-  if (!Ctor) return null;
-  if (!sharedAudioContext) sharedAudioContext = new Ctor();
-  if (sharedAudioContext.state === "suspended") void sharedAudioContext.resume();
-  return sharedAudioContext;
+function writeAsciiString(view: DataView, offset: number, text: string): void {
+  for (let i = 0; i < text.length; i++) view.setUint8(offset + i, text.charCodeAt(i));
 }
 
-/**
- * TEMPORARY DEVELOPMENT PLACEHOLDER — not a production sound asset.
- * Plays a short synthesized chime so Listen buttons are audibly testable
- * before real recordings exist. Deleted in effect (never called) as soon
- * as a matching file exists under public/audio, since playAudio() always
- * tries the real file first.
- */
-function playTemporaryTone(): void {
-  const ctx = getAudioContext();
-  if (!ctx) return;
+function encodeWavPcm16(buffer: AudioBuffer): Uint8Array {
+  const numChannels = buffer.numberOfChannels;
+  const sampleRate = buffer.sampleRate;
+  const numFrames = buffer.length;
+  const blockAlign = numChannels * 2;
+  const dataSize = numFrames * blockAlign;
+  const out = new ArrayBuffer(44 + dataSize);
+  const view = new DataView(out);
+
+  writeAsciiString(view, 0, "RIFF");
+  view.setUint32(4, 36 + dataSize, true);
+  writeAsciiString(view, 8, "WAVE");
+  writeAsciiString(view, 12, "fmt ");
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, numChannels, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * blockAlign, true);
+  view.setUint16(32, blockAlign, true);
+  view.setUint16(34, 16, true);
+  writeAsciiString(view, 36, "data");
+  view.setUint32(40, dataSize, true);
+
+  const channels: Float32Array[] = [];
+  for (let c = 0; c < numChannels; c++) channels.push(buffer.getChannelData(c));
+
+  let offset = 44;
+  for (let i = 0; i < numFrames; i++) {
+    for (let c = 0; c < numChannels; c++) {
+      const clamped = Math.max(-1, Math.min(1, channels[c][i]));
+      view.setInt16(offset, clamped < 0 ? clamped * 0x8000 : clamped * 0x7fff, true);
+      offset += 2;
+    }
+  }
+
+  return new Uint8Array(out);
+}
+
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = "";
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
+}
+
+/** A friendly two-note "ding" — cheerful, not an alarm, ~350ms. */
+async function synthesizeTemporaryToneDataUri(): Promise<string | null> {
+  const OfflineCtor =
+    window.OfflineAudioContext ||
+    (window as unknown as { webkitOfflineAudioContext?: typeof OfflineAudioContext })
+      .webkitOfflineAudioContext;
+  if (!OfflineCtor) return null;
+
+  const sampleRate = 22050;
+  const duration = 0.36;
+  const ctx = new OfflineCtor(1, Math.ceil(sampleRate * duration), sampleRate);
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
   osc.type = "sine";
-  osc.frequency.value = 520;
-  const now = ctx.currentTime;
-  gain.gain.setValueAtTime(0.0001, now);
-  gain.gain.exponentialRampToValueAtTime(0.18, now + 0.02);
-  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+  osc.frequency.setValueAtTime(660, 0);
+  osc.frequency.setValueAtTime(880, 0.15);
+  gain.gain.setValueAtTime(0.0001, 0);
+  gain.gain.exponentialRampToValueAtTime(0.5, 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.5, 0.13);
+  gain.gain.exponentialRampToValueAtTime(0.0001, duration - 0.01);
   osc.connect(gain).connect(ctx.destination);
-  osc.start(now);
-  osc.stop(now + 0.4);
+  osc.start(0);
+  osc.stop(duration);
+
+  const rendered = await ctx.startRendering();
+  const wavBytes = encodeWavPcm16(rendered);
+  return `data:audio/wav;base64,${bytesToBase64(wavBytes)}`;
+}
+
+let cachedTemporaryToneDataUri: string | null = null;
+let temporaryToneDataUriPromise: Promise<string | null> | null = null;
+
+function getTemporaryToneDataUri(): Promise<string | null> {
+  if (!temporaryToneDataUriPromise) {
+    temporaryToneDataUriPromise = synthesizeTemporaryToneDataUri()
+      .then((uri) => {
+        cachedTemporaryToneDataUri = uri;
+        return uri;
+      })
+      .catch(() => null);
+  }
+  return temporaryToneDataUriPromise;
+}
+
+/**
+ * Synthesizes the temporary placeholder tone ahead of time so it is ready
+ * the instant a user first taps a Listen button. Safe to call repeatedly;
+ * only renders once. Call this once at app startup.
+ */
+export function preloadTemporaryTone(): void {
+  void getTemporaryToneDataUri();
 }
 
 /**
@@ -88,15 +173,38 @@ function playTemporaryTone(): void {
  * Falls back to a labeled TEMPORARY development tone if the file is
  * missing (expected throughout Phase 2, since no production audio has
  * been recorded yet — see public/audio/README.md).
+ *
+ * Must be called synchronously from a user gesture handler (e.g. a
+ * button's onClick) — the very first thing it does is arm the fallback
+ * tone element, which is what makes it audible on iOS Safari regardless
+ * of which path (real file vs. fallback) ends up being used.
  */
 export function playAudio(path: string): Promise<PlayAudioResult> {
   return new Promise((resolve) => {
     let settled = false;
-    const audio = new Audio(path);
+
+    // Arm the fallback tone synchronously, inside the calling gesture, even
+    // though we don't yet know whether we'll need it — this is what makes
+    // it audible on iOS Safari later, when the actual unmute+replay happens
+    // asynchronously (after the real file is confirmed missing). Playing an
+    // element with no source yet doesn't establish a valid gesture-backed
+    // session, so this only works once the tone has been pre-synthesized
+    // (see preloadTemporaryTone, called at app startup — by the time a user
+    // reaches a Listen button through Splash + Home, it is always ready).
+    let toneEl: HTMLAudioElement | null = null;
+    if (typeof HTMLAudioElement !== "undefined" && cachedTemporaryToneDataUri) {
+      toneEl = new Audio(cachedTemporaryToneDataUri);
+      toneEl.muted = true;
+      toneEl.play().catch(() => {});
+    }
+    const tonePromise = getTemporaryToneDataUri();
+
+    const real = new Audio(path);
 
     const succeed = () => {
       if (settled) return;
       settled = true;
+      toneEl?.pause();
       resolve("played");
     };
 
@@ -108,14 +216,28 @@ export function playAudio(path: string): Promise<PlayAudioResult> {
           `[TEMP PLACEHOLDER AUDIO] "${path}" not found — playing a temporary development tone instead of production audio.`,
         );
       }
-      playTemporaryTone();
+      void tonePromise.then((dataUri) => {
+        if (!dataUri) return;
+        if (toneEl) {
+          // Already armed (muted) synchronously in this gesture — unmute
+          // and restart from the top.
+          toneEl.muted = false;
+          toneEl.currentTime = 0;
+          void toneEl.play();
+        } else {
+          // Rare: first-ever tap landed before preload finished. Best
+          // effort — may be blocked on iOS since we're outside the
+          // original gesture window.
+          void new Audio(dataUri).play();
+        }
+      });
       resolve("temp_tone");
     };
 
-    audio.addEventListener("playing", succeed, { once: true });
-    audio.addEventListener("error", fallBack, { once: true });
+    real.addEventListener("playing", succeed, { once: true });
+    real.addEventListener("error", fallBack, { once: true });
 
-    const playPromise = audio.play();
+    const playPromise = real.play();
     if (playPromise && typeof playPromise.catch === "function") {
       playPromise.catch(fallBack);
     }

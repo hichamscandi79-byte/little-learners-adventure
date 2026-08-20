@@ -4,6 +4,9 @@ import { BrowserRouter } from 'react-router-dom'
 import './index.css'
 import App from './App.tsx'
 import { getMissingAudioMappings } from './data/validateContent.ts'
+import { preloadTemporaryTone } from './audio/audioManifest.ts'
+
+preloadTemporaryTone()
 
 if (import.meta.env.DEV) {
   const missing = getMissingAudioMappings()

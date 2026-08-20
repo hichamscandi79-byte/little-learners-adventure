@@ -14,7 +14,7 @@ export function WorldHeader({ world }: WorldHeaderProps) {
       className="safe-top flex items-center gap-4 px-4 pb-6 pt-6 sm:px-8"
       style={{ backgroundColor: world.colorSoft }}
     >
-      <IconButton label="Back to home" onClick={() => navigate("/")}>
+      <IconButton label="Back to home" onClick={() => navigate("/home")}>
         <span aria-hidden="true">⬅️</span>
       </IconButton>
       <div className="flex items-center gap-3">

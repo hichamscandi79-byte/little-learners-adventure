@@ -48,6 +48,7 @@ export const LETTERS: LearningItem[] = SEEDS.map(({ letter, word, emoji }) => {
     audio: {
       word: audioPath("letters", id),
       phonics: audioPath("phonics", id),
+      phrase: audioPath("letters", `${id}-phrase`),
     },
     meta: { exampleWord: word },
   };

@@ -33,6 +33,8 @@ export interface AudioRefs {
   word?: string;
   /** Letter phonics ("sound it out") recording — ABC Adventure only. */
   phonics?: string;
+  /** Full example-word teaching phrase, e.g. "F is for Fish." — ABC Adventure only. */
+  phrase?: string;
   /** Animal sound-effect recording (e.g. a bark) — Animals only. */
   sound?: string;
   /** Short spoken UI prompt, e.g. "Tap to hear!" — reserved, not yet wired to any screen. */

@@ -4,7 +4,8 @@
  * Content data (see `src/data/*`) references audio files by logical path,
  * built via `audioPath()` below. Files live under `public/audio/`:
  *
- *   audio/en/letters/       — letter name recordings, e.g. a.mp3
+ *   audio/en/letters/       — letter name recordings (a.mp3) and full
+ *                             example-phrase recordings (a-phrase.mp3)
  *   audio/en/phonics/       — letter sound recordings, e.g. a.mp3
  *   audio/en/numbers/       — number word recordings, e.g. 1.mp3
  *   audio/en/colors/        — color name recordings
@@ -14,11 +15,13 @@
  *   audio/en/instructions/  — short UI prompts ("Tap to hear!") — reserved, unused in Phase 2
  *   audio/sfx/              — reward/feedback sound effects — reserved for Phase 4
  *
- * 125 of 140 production recordings are in place (letter names, phonics
- * sounds, numbers, colors, shapes, animal names, first words — all real
- * speech). The 15 animal *sound effects* (bark, moo, quack, etc.) are not
- * TTS-producible and still require a licensed sound-effects source — see
- * public/audio/README.md. `playAudio()` below is a real playback engine —
+ * 151 of 166 production recordings are in place — letter names, phonics
+ * sounds, letter example-phrases ("F is for Fish."), numbers, colors,
+ * shapes, animal names, and first words, all real speech from Microsoft's
+ * en-US-JennyNeural voice at a slowed -15% rate. The 15 animal *sound
+ * effects* (bark, moo, quack, etc.) are not TTS-producible and still
+ * require a licensed sound-effects source — see public/audio/README.md.
+ * `playAudio()` below is a real playback engine —
  * it always attempts the real file first — but when a file is missing it
  * falls back to a synthesized development tone so the Listen interaction
  * is genuinely testable end to end regardless of asset completeness. That

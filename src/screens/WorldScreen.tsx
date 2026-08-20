@@ -6,7 +6,7 @@ import { getWorld, getWorldItems } from "../data/worlds";
 import type { LearningItem, WorldId } from "../types/content";
 import { playAudio } from "../audio/audioManifest";
 
-type AudioKind = "word" | "phonics" | "sound";
+type AudioKind = "word" | "phonics" | "phrase" | "sound";
 
 /**
  * Groups items into ordered categories when every item in the world shares
@@ -152,6 +152,16 @@ export function WorldScreen() {
                   className={playingKind === "phonics" ? "animate-pulse" : undefined}
                 >
                   <span aria-hidden="true">🔤</span> Phonics Sound
+                </Button>
+              )}
+              {active.audio.phrase && (
+                <Button
+                  variant="soft"
+                  onClick={() => handlePlay("phrase")}
+                  disabled={playingKind === "phrase"}
+                  className={playingKind === "phrase" ? "animate-pulse" : undefined}
+                >
+                  <span aria-hidden="true">📖</span> Example Phrase
                 </Button>
               )}
               {active.audio.sound && (

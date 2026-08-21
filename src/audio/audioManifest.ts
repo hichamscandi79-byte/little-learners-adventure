@@ -15,13 +15,14 @@
  *   audio/en/instructions/  — short UI prompts ("Tap to hear!") — reserved, unused in Phase 2
  *   audio/sfx/              — reward/feedback sound effects — reserved for Phase 4
  *
- * 151 of 166 production recordings are in place — letter names, phonics
+ * All 166 production recordings are in place — letter names, phonics
  * sounds, letter example-phrases ("F is for Fish."), numbers, colors,
- * shapes, animal names, and first words, all real speech from Microsoft's
- * en-US-JennyNeural voice at a slowed -15% rate. The 15 animal *sound
- * effects* (bark, moo, quack, etc.) are not TTS-producible and still
- * require a licensed sound-effects source — see public/audio/README.md.
- * `playAudio()` below is a real playback engine —
+ * shapes, animal names, and first words are real speech from Microsoft's
+ * en-US-JennyNeural voice at a slowed -15% rate; the 15 animal *sound
+ * effects* (bark, moo, quack, etc.) are genuine CC0 field/studio
+ * recordings, not TTS or synthesized tones — see public/audio/README.md
+ * for full sourcing/licensing detail. `playAudio()` below is a real
+ * playback engine —
  * it always attempts the real file first — but when a file is missing it
  * falls back to a synthesized development tone so the Listen interaction
  * is genuinely testable end to end regardless of asset completeness. That

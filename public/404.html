@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Little Learners Adventure</title>
+    <!--
+      GitHub Pages has no server-side router, so a direct link or refresh on
+      any in-app route (e.g. /little-learners-adventure/world/abc) 404s here.
+      This redirects it back to index.html with the intended path encoded in
+      the query string; index.html's decode script (see index.html) restores
+      it before the app boots. Technique: github.com/rafgraph/spa-github-pages
+
+      pathSegmentsToKeep = 1 assumes this exact GitHub Pages *project* page
+      (served under /little-learners-adventure/). If this app is ever
+      re-hosted at a custom domain or root site, change it to 0.
+    -->
+    <script>
+      var pathSegmentsToKeep = 1;
+      var l = window.location;
+      l.replace(
+        l.protocol +
+          "//" +
+          l.hostname +
+          (l.port ? ":" + l.port : "") +
+          l.pathname.split("/").slice(0, 1 + pathSegmentsToKeep).join("/") +
+          "/?/" +
+          l.pathname.slice(1).split("/").slice(pathSegmentsToKeep).join("/").replace(/&/g, "~and~") +
+          (l.search ? "&" + l.search.slice(1).replace(/&/g, "~and~") : "") +
+          l.hash,
+      );
+    </script>
+  </head>
+  <body></body>
+</html>

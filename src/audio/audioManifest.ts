@@ -46,7 +46,10 @@
 
 export const AUDIO_LOCALE = "en";
 
-export const AUDIO_BASE_PATH = `/audio/${AUDIO_LOCALE}`;
+// import.meta.env.BASE_URL always ends in "/" (Vite guarantees this) — "/"
+// for a root deploy, or e.g. "/little-learners-adventure/" for a GitHub
+// Pages project-page deploy — so this resolves correctly under either.
+export const AUDIO_BASE_PATH = `${import.meta.env.BASE_URL}audio/${AUDIO_LOCALE}`;
 
 export const AUDIO_CATEGORIES = [
   "letters",

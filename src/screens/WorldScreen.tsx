@@ -1,12 +1,15 @@
 import { useMemo, useState } from "react";
 import { Navigate, useParams } from "react-router-dom";
 import { PageShell } from "../components/layout/PageShell";
-import { WorldHeader, LearningTile, ResponsiveGrid, FeedbackBubble, Button } from "../components/ui";
+import { WorldHeader, LearningTile, ResponsiveGrid, Button, StatBadge } from "../components/ui";
+import { TraceActivity, PlayActivity } from "../components/activities";
 import { getWorld, getWorldItems } from "../data/worlds";
 import type { LearningItem, WorldId } from "../types/content";
 import { playAudio } from "../audio/audioManifest";
+import { useProgress, isItemFullyComplete, getWorldProgress } from "../state/progress";
 
 type AudioKind = "word" | "phonics" | "phrase" | "sound";
+type ActivityKind = "trace" | "play";
 
 /**
  * Groups items into ordered categories when every item in the world shares
@@ -38,18 +41,20 @@ export function WorldScreen() {
   const groupedItems = useMemo(() => groupByCategory(items), [items]);
 
   const [selected, setSelected] = useState<LearningItem | undefined>(items[0]);
-  const [toast, setToast] = useState<string | null>(null);
   const [playingKind, setPlayingKind] = useState<AudioKind | null>(null);
+  const [activity, setActivity] = useState<ActivityKind | null>(null);
+
+  const progress = useProgress();
 
   if (!world) {
     return <Navigate to="/home" replace />;
   }
 
   const active = selected ?? items[0];
+  const worldProgress = getWorldProgress(progress, world.id, items);
 
   function handleSelect(item: LearningItem) {
     setSelected(item);
-    setToast(null);
     setPlayingKind(null);
   }
 
@@ -57,14 +62,9 @@ export function WorldScreen() {
     if (!active) return;
     const path = active.audio[kind];
     if (!path) return;
-    setToast(null);
     setPlayingKind(kind);
     await playAudio(path);
     setPlayingKind(null);
-  }
-
-  function handleComingSoon(feature: string) {
-    setToast(`${feature} is coming in a future update!`);
   }
 
   function renderTileGrid(worldItems: LearningItem[]) {
@@ -76,6 +76,7 @@ export function WorldScreen() {
             item={item}
             accentColor={world!.color}
             selected={item.id === active?.id}
+            complete={isItemFullyComplete(progress, world!.id, item.id)}
             onSelect={handleSelect}
           />
         ))}
@@ -83,11 +84,21 @@ export function WorldScreen() {
     );
   }
 
+  const activeIndex = active ? items.findIndex((item) => item.id === active.id) : 0;
+
   return (
     <div className="min-h-dvh bg-cream pb-16">
       <WorldHeader world={world} />
 
       <PageShell className="mt-6">
+        <div className="mb-4 flex justify-center sm:justify-start">
+          <StatBadge
+            icon="⭐"
+            label="World progress"
+            value={`${worldProgress.starsEarned}/${worldProgress.starsTotal}`}
+          />
+        </div>
+
         {active && (
           <section
             aria-label="Selected item"
@@ -175,15 +186,13 @@ export function WorldScreen() {
                   {typeof active.meta?.sound === "string" ? active.meta.sound : "Animal Sound"}
                 </Button>
               )}
-              <Button variant="soft" onClick={() => handleComingSoon("Tracing")}>
+              <Button variant="soft" onClick={() => setActivity("trace")}>
                 <span aria-hidden="true">✏️</span> Trace
               </Button>
-              <Button variant="soft" onClick={() => handleComingSoon("Play")}>
+              <Button variant="soft" onClick={() => setActivity("play")}>
                 <span aria-hidden="true">🎮</span> Play
               </Button>
             </div>
-
-            {toast && <FeedbackBubble tone="gentle" message={toast} />}
           </section>
         )}
 
@@ -204,6 +213,23 @@ export function WorldScreen() {
           )}
         </section>
       </PageShell>
+
+      {activity === "trace" && (
+        <TraceActivity
+          world={world}
+          items={items}
+          startIndex={Math.max(0, activeIndex)}
+          onExit={() => setActivity(null)}
+        />
+      )}
+      {activity === "play" && (
+        <PlayActivity
+          world={world}
+          items={items}
+          startIndex={Math.max(0, activeIndex)}
+          onExit={() => setActivity(null)}
+        />
+      )}
     </div>
   );
 }

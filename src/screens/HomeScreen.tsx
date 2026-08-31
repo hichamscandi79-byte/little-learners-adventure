@@ -1,9 +1,13 @@
 import { Link } from "react-router-dom";
 import { PageShell } from "../components/layout/PageShell";
 import { WorldCard, StatBadge } from "../components/ui";
-import { WORLDS } from "../data/worlds";
+import { WORLDS, WORLD_ITEMS } from "../data/worlds";
+import { useProgress, getGlobalProgress, getWorldProgress } from "../state/progress";
 
 export function HomeScreen() {
+  const progress = useProgress();
+  const { totalStars, worldsCompleted } = getGlobalProgress(progress, WORLD_ITEMS);
+
   return (
     <div className="min-h-dvh bg-cream pb-12">
       <PageShell className="safe-top pt-6 sm:pt-10">
@@ -27,15 +31,24 @@ export function HomeScreen() {
         </header>
 
         <div className="mt-5 flex flex-wrap gap-3">
-          <StatBadge icon="⭐" label="Stars earned" value={0} />
-          <StatBadge icon="📒" label="Stickers unlocked" value={0} />
+          <StatBadge icon="⭐" label="Stars earned" value={totalStars} />
+          <StatBadge icon="🏅" label="Worlds completed" value={worldsCompleted} />
         </div>
 
         <section className="mt-8" aria-label="Learning worlds">
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-5">
-            {WORLDS.map((world) => (
-              <WorldCard key={world.id} world={world} />
-            ))}
+            {WORLDS.map((world) => {
+              const worldProgress = getWorldProgress(progress, world.id, WORLD_ITEMS[world.id]);
+              return (
+                <WorldCard
+                  key={world.id}
+                  world={world}
+                  starsEarned={worldProgress.starsEarned}
+                  starsTotal={worldProgress.starsTotal}
+                  isComplete={worldProgress.isWorldComplete}
+                />
+              );
+            })}
           </div>
         </section>
       </PageShell>

@@ -7,3 +7,4 @@ export { LearningTile } from "./LearningTile";
 export { ResponsiveGrid } from "./ResponsiveGrid";
 export { FeedbackBubble } from "./FeedbackBubble";
 export { StatBadge } from "./StatBadge";
+export { ItemVisual } from "./ItemVisual";

@@ -7,7 +7,6 @@ interface StatBadgeProps {
   onClick?: () => void;
 }
 
-/** Placeholder Stars / Sticker Book entry points shown on Home (Phase 4 wires real data). */
 export function StatBadge({ icon, label, value, onClick }: StatBadgeProps) {
   const Tag = onClick ? "button" : "div";
   return (

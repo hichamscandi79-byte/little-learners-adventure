@@ -8,10 +8,7 @@ const TONE_CLASSES: Record<NonNullable<FeedbackBubbleProps["tone"]>, string> = {
   gentle: "bg-yellow-soft text-navy",
 };
 
-/**
- * Shared positive-feedback UI. Phase 1 only demonstrates the visual —
- * real success/retry logic arrives with the mini-games in Phase 3.
- */
+/** Shared positive/gentle feedback pill used across the Trace and Play activities. */
 export function FeedbackBubble({ message, tone = "positive" }: FeedbackBubbleProps) {
   return (
     <div
